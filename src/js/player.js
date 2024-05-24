@@ -1,103 +1,289 @@
-import {Actor, Engine, Screen, Vector, Keys, clamp, Color, ParticleEmitter} from "excalibur";
+import {
+    Actor,
+    Engine,
+    Vector,
+    Keys,
+    clamp,
+    Color,
+    ParticleEmitter,
+    SpriteSheet,
+    Animation,
+    range,
+    Timer,
+    CollisionType
+} from "excalibur";
 import {Resources, ResourceLoader} from './resources.js'
-import {Game} from './game.js'
-import {Food} from './food.js'
+import {Tuna} from "./tuna.js"
+import {ScaredRadius} from "./scaredRadius.js";
+import {Bubbles} from "./bubbles.js";
+import {Healthbar} from "./healthBar.js";
+import {StaminaBar} from "./staminaBar.js";
+import {Fish} from "./fish.js";
+import {Coin} from "./coin.js";
 
 export class Player extends Actor {
     score = 0;
-    game;
+    counter = 0;
+    playerHealth = 1;
     ySpeed = 80;
     xSpeed = 80;
-    xScale = 0.5
-    yScale = 0.5
-    playerScale = new Vector(this.xScale, this.yScale)
+    xScale = 0.25;
+    yScale = 0.25;
+    bubbleOffset = -15;
+    fishAmountLimit = 30;
+    staminaRegenMultiplier = 2;
+    playerScale = new Vector(this.xScale, this.yScale);
+    particleOn = false;
+    fishSpawn = true;
+    stamina = true
+    fishCollection = [];
+    running = null;
+    scaredRadius;
+    game;
+    scene;
 
-    constructor(game) {
-        super({width: 100, height: 85});
+    constructor(game, scene) {
+        super({
+            width: 380, height: 200, collisionType: CollisionType.Active
+        });
         this.game = game
+        this.scene = scene
     }
 
     onInitialize(engine) {
         super.onInitialize(engine);
+        // ANIMATION
+        const spriteSheet = SpriteSheet.fromImageSource({
+            image: Resources.SharkAnim, // BubbleImage should be an instance of the image resource
+            grid: {
+                columns: 4,
+                rows: 1,
+                spriteWidth: 240,
+                spriteHeight: 432
+            },
+        });
+        this.Animation = Animation.fromSpriteSheet(spriteSheet, range(0, 3), 100);
+        this.graphics.use(this.Animation);
+        this.z = 1;
+        // COLLISION EVENT
         this.on('collisionstart', (event) => this.hitSomething(event, this.game))
-        this.graphics.use(Resources.Fish.toSprite());
+        // TIMER FOR SPAWNING THE BUBBLES
+        const timer = new Timer({
+            fcn: () => this.spawnBubbles(),
+            repeats: true,
+            interval: 5000,
+        })
+        engine.currentScene.add(timer)
+        timer.start()
+        // SET INITIAL POSITION, SCALE AND SPEED
         this.pos = new Vector(400, 400);
         this.vel = new Vector(0, 0);
         this.scale = this.playerScale;
+        // SET UP COLLIDER
+
+        this.collider.useBoxCollider(
+            70,
+            70,
+            new Vector (0,0),
+            new Vector (-100,0)
+        )
+
+        // ADD HEALTHBAR
+        this.healthbar = new Healthbar();
+        this.addChild(this.healthbar);
+        this.healthbar.pos = new Vector(-100,-120);
+        // ADD STAMINABAR
+        this.staminabar = new StaminaBar();
+        this.addChild(this.staminabar);
+        this.staminabar.pos = new Vector(-100,-100);
+        // ADD SCARED RADIUS
+        const scaredRadius = new ScaredRadius(this.pos.x -400, this.pos.y - 400, 0)
+        this.addChild(scaredRadius)
+        this.scaredRadius = true;
+    }
+
+    spawnBubbles(){
+        const bubble = new Bubbles(this.pos.x + this.bubbleOffset,this.pos.y - 15)
+        this.game.add(bubble);
     }
 
     hitSomething(event, game) {
-        console.log(event.other)
-        if (event.other instanceof Food) {
-            console.log("the fish eats the food")
-            event.other.kill();
-            //this.game.spawnFood();
-            this.xScale += 0.1
-            this.yScale += 0.1
-            if (!this.ySpeed < 10) {
-                this.ySpeed -= 5;
+        if (event.other instanceof Fish && this.pos.y < 850) {
+            console.log(event.other.randomScale);
+            console.log(event.other.height);
+            console.log(this.yScale * 100);
+            if(event.other.randomScale * 48 < this.yScale * 100){
+                console.log('this fish is smaller!')
+                // kill fish
+                event.other.kill();
+                //increase shark size
+                this.xScale += 0.01
+                this.yScale += 0.01
+                //increase shark speed
+                if (!this.ySpeed > 120) {
+                    this.ySpeed += 0.5;
+                }
+                if (!this.xSpeed > 120) {
+                    this.xSpeed += 0.5;
+                }
+                // decrease the camera zoom
+                //this.scene.zoomUpdate();
+                if (this.scene.camera.zoom > 1){
+                    this.scene.camera.zoom -= 0.01;
+                }
+
+                // check if fish are allowed to spawn again
+                if (this.fishCollection.length < this.fishAmountLimit){
+                    this.fishSpawn = true;
+                }
+
+                this.playerScale = new Vector(this.xScale, this.yScale)
+                this.scale = this.playerScale;
+                this.score++
+                console.log(this.children[0]);
+                //this.children[0].text = 'Score: ' + this.score.toString();
+                // this.game.scoreLabel.text =
+                //this.children[0].pos.y += 0.01;
+                this.spawnBlood(game, event.other.pos.x, event.other.pos.y);
+            }else{
+                console.log('this fish is bigger')
+                this.playerHealth -= 0.01;
+                this.children[0].reduceHealth(0.01)
+                this.vel.x *= -1
+                this.vel.y *= -1
+                this.scene.shakeCam();
             }
-            if (!this.xSpeed < 10) {
-                this.xSpeed -= 5;
-            }
-            this.playerScale = new Vector(this.xScale, this.yScale)
-            this.scale = this.playerScale;
-            this.score++
-            this.game.scoreLabel.text = 'Score: ' + this.score.toString();
-            this.spawnBlood(game);
         }
     }
 
     onPreUpdate(engine) {
+        if (this.pos.y > 850){
+            console.log('in the safe zone')
+        } else{
+
+        }
+
+        if (!(
+            engine.input.keyboard.isHeld(Keys.W) ||
+            engine.input.keyboard.isHeld(Keys.A) ||
+            engine.input.keyboard.isHeld(Keys.S) ||
+            engine.input.keyboard.isHeld(Keys.D) ||
+            engine.input.keyboard.isHeld(Keys.Up) ||
+            engine.input.keyboard.isHeld(Keys.Left) ||
+            engine.input.keyboard.isHeld(Keys.Down) ||
+            engine.input.keyboard.isHeld(Keys.Right)
+        ))
+        {
+            this.graphics.use(Resources.SharkStill.toSprite());
+        } else{
+            this.graphics.use(this.Animation);
+        }
+
         let xspeed = 0;
         let yspeed = 0;
-        this.pos.x = clamp(this.pos.x, 0, 1024)
-        this.pos.y = clamp(this.pos.y, 0, 720)
+        this.pos.x = clamp(this.pos.x, 0, 3040)
+        this.pos.y = clamp(this.pos.y, 0, 960)
+
+        if (engine.input.keyboard.isHeld(Keys.ShiftLeft) && this.stamina === true && (this.vel.x !== 0 || this.vel.y !== 0)) {
+            this.running = 2;
+            //this.scene.staminabar.reduceStamina(0.005);
+            //console.log(this.children[1].currentStamina)
+            this.children[1].reduceStamina(0.005)
+            if(this.children[1].currentStamina <= 0){
+                this.stamina = false;
+                this.staminaRegenMultiplier = 8;
+                console.log('no stamina anymore')
+                console.log(this.stamina)
+            }
+        } else{
+            this.running = 1;
+            //this.scene.staminabar.increaseStamina(0.0005);
+            this.children[1].increaseStamina(0.0008 * this.staminaRegenMultiplier)
+
+            if (this.children[1].currentStamina >= 0.5){
+                this.stamina = true;
+                this.staminaRegenMultiplier = 2;
+            }
+
+        }
 
         if (engine.input.keyboard.isHeld(Keys.W) || engine.input.keyboard.isHeld(Keys.Up)) {
-            yspeed = -this.ySpeed * 0.8;
-            this.graphics.flipVertical = false;
+            yspeed = -this.ySpeed * 0.8 * this.running;
+            if (this.running > 1){
+                //this.spawnSpeedBubbles(this.game, this.pos.x,this.pos.y, 0, -1000)
+                this.particleOn = true
+            }
+            //this.actions.rotateTo(Math.PI / 2, Math.PI, RotationType.Clockwise);
+            //this.graphics.flipVertical = false;
         }
 
         if (engine.input.keyboard.isHeld(Keys.S) || engine.input.keyboard.isHeld(Keys.Down)) {
-            yspeed = this.ySpeed * 1.3;
-            this.graphics.flipVertical = true;
+            yspeed = this.ySpeed * 1.3 * this.running;
+            if (this.running > 1){
+                //this.spawnSpeedBubbles(this.game, this.pos.x,this.pos.y, 0, 1000)
+                this.particleOn = true
+            }
+            //this.graphics.flipVertical = true;
         }
 
         if (engine.input.keyboard.isHeld(Keys.D) || engine.input.keyboard.isHeld(Keys.Right)) {
-            xspeed = this.xSpeed;
+            xspeed = this.xSpeed * this.running;
             this.graphics.flipHorizontal = true;
 
+            this.collider.useBoxCollider(
+                70,
+                70,
+                new Vector (0,0),
+                new Vector (40,0)
+            )
+
+            this.bubbleOffset = 20;
+
+            if (this.running > 1){
+                this.spawnSpeedBubbles(this.game, this.pos.x - 25,this.pos.y + 2, -1000, 0)
+                this.particleOn = true
+            }
         }
 
         if (engine.input.keyboard.isHeld(Keys.A) || engine.input.keyboard.isHeld(Keys.Left)) {
-            xspeed = -this.xSpeed;
+            xspeed = -this.xSpeed * this.running;
             this.graphics.flipHorizontal = false;
 
+            this.collider.useBoxCollider(
+                70,
+                70,
+                new Vector (0,0),
+                new Vector (-100,0)
+            )
+
+            this.bubbleOffset = -20;
+
+            if (this.running > 1){
+                if (this.running > 1){
+                    this.spawnSpeedBubbles(this.game, this.pos.x + 25,this.pos.y + 2, 1000, 0)
+                }
+                this.particleOn = true
+            }
         }
 
         this.vel = new Vector(xspeed, yspeed);
         // this.graphics.flipHorizontal = (this.vel.x > 0)
-
-        if (engine.input.keyboard.wasPressed(Keys.Space)) {
-            console.log("shoot!")
-        }
     }
 
-    spawnBlood(game) {
+    spawnBlood(game, x, y) {
         let emitter = new ParticleEmitter(0, 0, 2, 2);
-        emitter.pos = this.pos.clone(); // Clone the player's position vector
+        emitter.pos = new Vector(x, y); //this.pos.clone(); // Clone the player's position vector
         emitter.radius = 5;
         emitter.minVel = 100;
         emitter.maxVel = 200;
         emitter.minAngle = 0;
         emitter.maxAngle = 6.2;
         emitter.isEmitting = true;
-        emitter.emitRate = 300;
-        emitter.opacity = 0.5;
+        emitter.emitRate = 1000;
+        emitter.opacity = 0.8;
         emitter.fadeFlag = true;
-        emitter.particleLife = 2352;
-        emitter.maxSize = 20;
+        emitter.particleLife = 3000;
+        emitter.maxSize = 5;
         emitter.minSize = 1;
         emitter.startSize = 0;
         emitter.endSize = 0;
@@ -108,8 +294,38 @@ export class Player extends Actor {
 
         setTimeout(() => {
             emitter.kill();
-        }, 100);
+        }, 5);
     }
+
+    spawnSpeedBubbles(game, x, y, velX, velY){
+        let emitter = new ParticleEmitter(0,0,0,2);
+        //emitter.emitterType = ex.EmitterType.Rectangle;
+        emitter.pos = new Vector(x, y); //this.pos.clone(); // Clone the player's position vector
+        emitter.radius = 5;
+        emitter.minVel = 50;
+        emitter.maxVel = 100;
+        emitter.minAngle = -1;
+        emitter.maxAngle = 1;
+        emitter.isEmitting = true;
+        emitter.emitRate = 50;
+        emitter.opacity = 0.5;
+        emitter.fadeFlag = true;
+        emitter.particleLife = 1000;
+        emitter.maxSize = 10;
+        emitter.minSize = 1;
+        emitter.startSize = 0;
+        emitter.endSize = 0;
+        emitter.acceleration = new Vector(velX, velY);
+        emitter.beginColor = Color.Cyan;
+        emitter.endColor = Color.Blue;
+        game.add(emitter);
+        setTimeout(() => {
+            console.log('clearing')
+            emitter.clearParticles();
+            emitter.kill();
+        }, 1);
+    }
+
 
 
 }

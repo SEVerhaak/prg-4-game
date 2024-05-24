@@ -1,53 +1,59 @@
 import '../css/style.css'
-import {Actor, Font, Engine, Vector, Label, ParticleEmitter, Color} from "excalibur"
+import {Actor, Font, Engine, Vector, Label, SpriteSheet, BoundingBox, Loader} from "excalibur"
 import {Resources, ResourceLoader} from './resources.js'
-import {Player} from './player.js'
-import {Food} from './food.js'
-import {BadFood} from './badFood.js'
-export class Game extends Engine {
-    count = 0;
+import {Mainlevel} from "./mainlevel.js";
+import {Player} from "./player.js";
+import {Healthbar} from "./healthBar.js";
+import {StaminaBar} from "./staminaBar.js";
+import {TiledResource} from "@excaliburjs/plugin-tiled";
+import {Tuna} from "./tuna.js";
+import {IntroScene} from "./intro.js";
 
+
+export class Game extends Engine {
+
+    mainlevel
     constructor() {
-        super({width: 1024, height: 720})
+        super({width: 1024, height: 720, antialiasing: false, maxFps: 60})
         this.start(ResourceLoader).then(() => this.startGame())
     }
 
     onInitialize(engine) {
         console.log("initializing game");
-        this.scoreLabel = new Label({
-            text: 'Score: 0',
-            pos: new Vector((this.drawWidth / 2) - 75, 25),
-            font: new Font({size: 30}),
-        });
-        this.add(this.scoreLabel);
+        this.introLevel = new IntroScene(this);
+        this.add('intro', this.introLevel);
+        this.showDebug(true);
     }
 
     startGame() {
+        // end of tilemap bs
         console.log("start de game!")
-        const player = new Player(this)
-        this.add(player);
+        this.goToScene('intro');
+
+        // old way to load map
+        /*
+        const tiledMapResource = new TiledResource('/src/assets/tileMap/map_good.tmx');
+        const loader = new Loader([tiledMapResource])
+        this.start(loader).then(() => {
+            tiledMapResource.addToScene(this.currentScene);
+        });
+         */
     }
 
     onPreUpdate(engine, delta) {
         super.onPreUpdate(engine, delta);
-        this.count++
-        if(this.count === 150){
-            this.spawnFood();
-            console.log('test?')
-            this.count = 0;
-        }
     }
 
-    spawnFood(){
-        const food  = new Food()
-        this.add(food);
+    spawnFish(x, y) {
+        const tuna = new Tuna(this, x, y)
+        this.add(tuna);
     }
 
-    addBlood(blood){
-        this.add(blood);
+    goToMainScene(){
+        this.mainlevel = new Mainlevel(this);
+        this.add('mainlevel', this.mainlevel);
+        this.goToScene('mainlevel');
     }
-
 }
-
 
 new Game()
