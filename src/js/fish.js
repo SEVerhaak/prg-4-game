@@ -14,9 +14,13 @@ export class Fish extends Actor {
     speedX
     speedY
     counter = 0
+    // speedMultiplier = 1
+    score;
     runningAway
+    windowWidth;
+    windowHeight
 
-    constructor(game, x, y) {
+    constructor(game, x, y, windowWidth, windowHeight) {
         super({
             width: 69,
             height: 48,
@@ -25,6 +29,8 @@ export class Fish extends Actor {
         this.game = game;
         this.yPosVar = y;
         this.xPosVar = x;
+        this.windowWidth = windowWidth
+        this.windowHeight = windowHeight
     }
 
     getRandomNumber(min, max) {
@@ -37,9 +43,8 @@ export class Fish extends Actor {
     onInitialize(engine) {
         this.randomScale = randomInRange(this.minScale, this.maxScale);
         this.scale = new Vector(this.randomScale, this.randomScale);
-        this.z = 3;
+        this.z = 1;
         super.onInitialize(engine);
-        this.on('collisionstart', (event) => this.scaredHit(event))
         //console.log('player coordinates within fish')
         //console.log('x: ' + this.xPosVar, 'y: ' + this.yPosVar)
         //this.sprite = Resources.Tuna.toSprite();
@@ -48,25 +53,25 @@ export class Fish extends Actor {
         this.randomY = Math.floor(randomInRange(0,960));
         //console.log('Random coordinates')
         //console.log('x: ' + this.randomX + 'y: ' + this.randomY)
-        if ((this.xPosVar + 512) > this.randomX ){
+        if ((this.xPosVar + this.windowWidth / 2) < this.randomX ){
             this.randomX += this.randomX + (this.xPosVar-this.randomX)
-            //console.log('within positive x')
-        } else if ((this.xPosVar - 512) > this.randomX){
+           // console.log('within positive x')
+        } else if ((this.xPosVar - this.windowWidth / 2) < this.randomX){
             this.randomX -= this.randomX + (this.randomX - this.xPosVar)
-            //console.log('within negative x')
+           // console.log('within negative x')
         }
-        //console.log('Random corrected coordinates')
-        //console.log('x: ' + this.randomX + 'y: ' + this.randomY)
+       // console.log('Random corrected coordinates')
+       // console.log('x: ' + this.randomX + 'y: ' + this.randomY)
         this.pos = new Vector(this.randomX, this.randomY);
-        //console.log('Fish position')
-        //console.log('x: ' + this.pos.x + 'y: ' + this.pos.y)
+       // console.log('Fish position')
+       // console.log('x: ' + this.pos.x + 'y: ' + this.pos.y)
         this.vel = new Vector(0, 0);
         if (Math.random() > 0.5){
-            this.speedX = this.getRandomNumber(50,150);
+            //this.speedX = this.getRandomNumber(50,150);
             this.vel.x = this.speedX
         } else {
-            this.speedX = this.getRandomNumber(-150,-50);
-            this.vel.x = this.speedX
+            //this.speedX = this.getRandomNumber(-150,-50);
+            this.vel.x =  -1 * this.speedX
             this.graphics.flipHorizontal = true;
         }
     }
@@ -74,6 +79,7 @@ export class Fish extends Actor {
     update(engine, delta) {
         // Custom update here
         super.update(engine, delta);
+
         this.counter++
         if (this.counter === 20){
             this.speedY = randomInRange(-50, 50);
@@ -83,30 +89,27 @@ export class Fish extends Actor {
         //this.vel.x = this.speedX;
         // Custom update here
         if (this.pos.x > 3100) {
+            //this.kill()
             this.pos.x = -50;
             this.runningAway = false;
         }
         if (this.pos.x < -50) {
+            //this.kill()
             this.pos.x = 3100;
             this.runningAway = false;
         }
         if (this.pos.y < -50) {
-            this.pos.y = 1400
-            this.runningAway = false;
+            //this.kill();
+            this.pos.y = -25
+            //this.runningAway = false;
         }
-        if (this.pos.y > 1050) {
-            this.kill();
+        if (this.pos.y > 930) {
+            this.pos.y = 10
         }
     }
 
     onPostKill(scene) {
         super.onPostKill(scene);
-    }
-
-    scaredHit(event){
-        if (event.other instanceof Player){
-            console.log(event.other)
-        }
     }
 
 }

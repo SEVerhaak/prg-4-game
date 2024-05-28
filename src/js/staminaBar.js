@@ -8,7 +8,7 @@ export class StaminaBar extends ScreenElement {
     background
 
     onInitialize(engine) {
-        console.log('im here!')
+        console.log('staminabar init!')
         this.currentStamina = 1;
         this.background = new Actor({ x: 0, y: 0, color: Color.fromRGB(255, 255, 255, 0.4), width: 200, height: 5, anchor: Vector.Zero})
         this.background.z = 3
@@ -22,6 +22,7 @@ export class StaminaBar extends ScreenElement {
         this.body.collisionType = CollisionType.PreventCollision
         this.staminaBar.body.collisionType = CollisionType.PreventCollision
         this.background.body.collisionType = CollisionType.PreventCollision
+        console.log('staminabar init succes')
     }
 
     reduceStamina(amount) {

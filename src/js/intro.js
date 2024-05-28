@@ -1,5 +1,5 @@
-import { Scene, Label, TextAlign, Color, Vector, Input, Font } from 'excalibur';
-
+import {Scene, Label, TextAlign, Color, Vector, Input, Font, Sprite, Actor} from 'excalibur';
+import {Resources, ResourceLoader} from './resources.js'
 export class IntroScene extends Scene {
     constructor(game) {
         super();
@@ -10,23 +10,24 @@ export class IntroScene extends Scene {
     onInitialize() {
         // Add event listener to transition to main game scene
         this.game.input.keyboard.on('press', (evt) => {
-            if (evt.key === Input.Keys.Space) {
+            if (evt.key === Input.Keys.Space && this.game.currentScene.name !== 'mainlevel') {
+                this.game.loadMainScene();
                 this.game.goToMainScene();
             }
         });
 
-        // Display instructions
-        const instructions = new Label({
-            text: 'Vang zo veel mogelijk vissen binnen de tijd als hongerige haai! \nGebruik de pijltes toetsen om te bewegen en shift om te sprinten!\nDruk op spatie om verder te gaan!',
-            font: new Font({
-                size: 23,  // Set font size here
-                family: 'Arial',
-                textAlign: TextAlign.Center
-            }),
-            textAlign: TextAlign.Center,
-            pos: new Vector((this.game.drawWidth / 2), this.game.drawHeight / 2),
-            color: Color.White,
+        const splashScreenActor = new Actor({
+            pos: new Vector(this.game.drawWidth / 2, this.game.drawHeight / 2),
+            width: Resources.SplashScreen.width,
+            height: Resources.SplashScreen.height
         });
-        this.add(instructions);
+
+        splashScreenActor.graphics.use(Resources.SplashScreen.toSprite());
+
+        splashScreenActor.anchor.setTo(0.5, 0.5);
+
+        splashScreenActor.scale = new Vector(0.75, 0.75)
+
+        this.add(splashScreenActor);
     }
 }

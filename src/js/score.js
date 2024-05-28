@@ -3,6 +3,7 @@ import {Resources} from "./resources.js";
 
 export class Score extends ScreenElement {
 
+    score
     scoreText
 
     onInitialize(engine) {

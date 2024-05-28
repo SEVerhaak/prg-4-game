@@ -18,6 +18,9 @@ const Resources = {
     SharkAnim: new ImageSource('images/shark_anim.png'),
     SharkStill: new ImageSource('images/shark_still.png'),
     BigCoin: new ImageSource('images/CoinBig.png'),
+    JellyFish: new ImageSource('images/JellyFish.png'),
+    SplashScreen: new ImageSource('images/splashscreenAlt.png'),
+    GameOver: new ImageSource('images/gameover.png'),
     Map: new TiledResource('src/assets/tileMap/map_good.tmx')
 
 }
@@ -38,6 +41,9 @@ const ResourceLoader = new Loader([
     Resources.SharkAnim,
     Resources.SharkStill,
     Resources.BigCoin,
+    Resources.JellyFish,
+    Resources.SplashScreen,
+    Resources.GameOver,
     Resources.Map
 ])
 

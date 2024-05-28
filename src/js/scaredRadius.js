@@ -4,7 +4,9 @@ import {Tuna} from "./tuna.js";
 import {Fish} from "./fish.js";
 
 export class ScaredRadius extends Actor {
-    working
+    working = true;
+    test = this.working;
+
     constructor(x, y, radius) {
         super({
             pos: new Vector(x, y),
@@ -17,18 +19,17 @@ export class ScaredRadius extends Actor {
 
     onInitialize(engine) {
         this.z = 3;
-
         super.onInitialize(engine);
-
+        this.scale = new Vector(1,1)
         // Set up collision event listener
         this.on('collisionstart', this.scaredHit);
+        console.log('scared radius loaded')
     }
 
     scaredHit(event) {
         // Check if the collision involves another actor
         if (event.other instanceof Fish) {
-            if(event.other.runningAway !== true && event.other.pos.y < 750 ){
-                console.log(event.other.pos.y)
+            if(event.other.runningAway !== true ){
                 // Handle the scared hit event
                 //console.log('Scared hit with actor:', event.other.vel.x);
                 event.other.vel.x = event.other.vel.x * -1;
@@ -39,8 +40,8 @@ export class ScaredRadius extends Actor {
     }
     onPreUpdate(engine, delta) {
         super.onPreUpdate(engine, delta);
-        console.log(this.parent);
-
+        //console.log(this.parent.scaredRadius);
+        //console.log(this.working)
     }
 
     testFunc(){

@@ -8,9 +8,11 @@ import {
     range,
     ImageSource,
     AnimationStrategy,
-    CollisionType, Timer, randomInRange
+    CollisionType, Timer, randomInRange, randomIntInRange
 } from "excalibur";
 import {Resources} from "./resources.js";
+import {Fish} from "./fish.js";
+import {Player} from "./player.js";
 
 export class Coin extends Actor {
     x
@@ -45,17 +47,29 @@ export class Coin extends Actor {
         this.scale = new Vector(1,1);
         this.vel.y = 50;
 
+        this.on('collisionstart', (evt) => this.handleCollision(evt));
     }
 
-    slowDownCoin(){
-        this.vel.y *= 0.95
+
+    handleCollision(evt) {
+        // Example: Log the collision
+        if (evt.other instanceof Player){
+            console.log(`Coin collided with ${evt.other.constructor.name}`);
+            this.kill();
+            evt.other.updateScore(500)
+            evt.other.updateStats(0.25, 0.1, 0.5, 0.2, randomIntInRange(0, 3))
+        }
+        // Example: Remove the coin on collision
+        // You can add other collision logic here
     }
+
 
     onPreUpdate(engine, delta) {
         super.onPreUpdate(engine, delta);
         this.counter++
         if (this.counter > 10 && this.vel.y > 15){
-            this.vel.y *= 0.999
+            this.vel.y *= 0.99
+            this.counter = 0;
         }
     }
 }

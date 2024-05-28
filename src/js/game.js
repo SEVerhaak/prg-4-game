@@ -1,20 +1,19 @@
 import '../css/style.css'
-import {Actor, Font, Engine, Vector, Label, SpriteSheet, BoundingBox, Loader} from "excalibur"
+import {Engine} from "excalibur"
 import {Resources, ResourceLoader} from './resources.js'
 import {Mainlevel} from "./mainlevel.js";
-import {Player} from "./player.js";
-import {Healthbar} from "./healthBar.js";
-import {StaminaBar} from "./staminaBar.js";
 import {TiledResource} from "@excaliburjs/plugin-tiled";
-import {Tuna} from "./tuna.js";
 import {IntroScene} from "./intro.js";
+import {GameOverScene} from "./gameOver.js";
 
 
 export class Game extends Engine {
 
-    mainlevel
+    mainLevel
+    introLevel
+    gameOver
     constructor() {
-        super({width: 1024, height: 720, antialiasing: false, maxFps: 60})
+        super({width: window.innerWidth, height: window.innerHeight, antialiasing: false, maxFps: 60, suppressPlayButton: true})
         this.start(ResourceLoader).then(() => this.startGame())
     }
 
@@ -22,7 +21,7 @@ export class Game extends Engine {
         console.log("initializing game");
         this.introLevel = new IntroScene(this);
         this.add('intro', this.introLevel);
-        this.showDebug(true);
+        //this.showDebug(true);
     }
 
     startGame() {
@@ -40,20 +39,27 @@ export class Game extends Engine {
          */
     }
 
-    onPreUpdate(engine, delta) {
-        super.onPreUpdate(engine, delta);
-    }
-
-    spawnFish(x, y) {
-        const tuna = new Tuna(this, x, y)
-        this.add(tuna);
+    loadMainScene(){
+        this.mainLevel = new Mainlevel(this, window.innerWidth, window.innerHeight);
+        this.add('mainlevel', this.mainLevel);
+        //this.goToScene('mainlevel');
     }
 
     goToMainScene(){
-        this.mainlevel = new Mainlevel(this);
-        this.add('mainlevel', this.mainlevel);
         this.goToScene('mainlevel');
     }
+
+    removeMainScene(){
+        this.remove('mainlevel')
+    }
+
+    gameOverScene(){
+        this.gameOver = new GameOverScene(this, this.mainLevel.getScore());
+        this.add('gameover', this.gameOver);
+        this.goToScene('gameover');
+        //this.remove('mainlevel');
+    }
+
 }
 
 new Game()

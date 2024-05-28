@@ -6,10 +6,25 @@ export class Tuna extends Fish {
     maxScale
     minScale
     sprite
-    constructor(game, x, y) {
+    speedX
+    score
+    xPosVar
+    yPosVar
+    windowWidth
+    windowHeight
+    constructor(game, x, y, windowWidth, windowHeight) {
         super({});
         this.maxScale = 1.0
         this.minScale = 0.35
         this.sprite = Resources.Tuna.toSprite();
+        this.speedX = randomInRange(50,100);
+        this.score = 75
+        this.game = game;
+        this.yPosVar = y;
+        this.xPosVar = x;
+        this.windowWidth = windowWidth
+        this.windowHeight = windowHeight
+        this.z = 0
+
     }
 }

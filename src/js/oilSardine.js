@@ -1,7 +1,7 @@
 import {Actor, Engine, Screen, Vector, Keys, randomInRange, Color, CollisionType} from "excalibur";
 import { Resources, ResourceLoader } from './resources.js'
 import {Fish} from "./fish.js";
-export class Sardine extends Fish {
+export class OilSardine extends Fish {
     randomScale
     maxScale
     minScale
@@ -14,11 +14,11 @@ export class Sardine extends Fish {
     windowHeight
     constructor(game, x, y, windowWidth, windowHeight) {
         super({});
-        this.maxScale = 0.2
-        this.minScale = 0.07
-        this.sprite = Resources.Sardine.toSprite();
-        this.speedX = randomInRange(40,150);
-        this.score = 5;
+        this.maxScale = 0.35
+        this.minScale = 0.1
+        this.sprite = Resources.OilSardine.toSprite();
+        this.speedX = randomInRange(50,120);
+        this.score = 20;
         this.game = game;
         this.yPosVar = y;
         this.xPosVar = x;

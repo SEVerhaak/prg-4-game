@@ -27,11 +27,14 @@ export class Player extends Actor {
     playerHealth = 1;
     ySpeed = 80;
     xSpeed = 80;
+    speedMultiplier = 1;
     xScale = 0.25;
     yScale = 0.25;
     bubbleOffset = -15;
     fishAmountLimit = 30;
     staminaRegenMultiplier = 2;
+    staminaRegenBonusMultiplier = 1;
+    staminaSlowdownMultiplier = 1;
     playerScale = new Vector(this.xScale, this.yScale);
     particleOn = false;
     fishSpawn = true;
@@ -52,6 +55,7 @@ export class Player extends Actor {
 
     onInitialize(engine) {
         super.onInitialize(engine);
+        console.log('player init')
         // ANIMATION
         const spriteSheet = SpriteSheet.fromImageSource({
             image: Resources.SharkAnim, // BubbleImage should be an instance of the image resource
@@ -76,7 +80,7 @@ export class Player extends Actor {
         engine.currentScene.add(timer)
         timer.start()
         // SET INITIAL POSITION, SCALE AND SPEED
-        this.pos = new Vector(400, 400);
+        this.pos = new Vector(1550, 400);
         this.vel = new Vector(0, 0);
         this.scale = this.playerScale;
         // SET UP COLLIDER
@@ -89,7 +93,7 @@ export class Player extends Actor {
         )
 
         // ADD HEALTHBAR
-        this.healthbar = new Healthbar();
+        this.healthbar = new Healthbar(this.game);
         this.addChild(this.healthbar);
         this.healthbar.pos = new Vector(-100,-120);
         // ADD STAMINABAR
@@ -97,58 +101,99 @@ export class Player extends Actor {
         this.addChild(this.staminabar);
         this.staminabar.pos = new Vector(-100,-100);
         // ADD SCARED RADIUS
-        const scaredRadius = new ScaredRadius(this.pos.x -400, this.pos.y - 400, 0)
-        this.addChild(scaredRadius)
-        this.scaredRadius = true;
+         this.scaredRadius = new ScaredRadius(this.pos.x -1550, this.pos.y - 400, 0)
+        this.addChild(this.scaredRadius)
+        console.log('player complete init')
     }
 
     spawnBubbles(){
-        const bubble = new Bubbles(this.pos.x + this.bubbleOffset,this.pos.y - 15)
+        const bubble = new Bubbles(this.pos.x + this.bubbleOffset,this.pos.y - 15) // - 15 om bubbels boven de haai te zetten
         this.game.add(bubble);
+    }
+
+    updateScore(scoreToAdd){
+        this.score += scoreToAdd
+        this.scene.score.updateScore(this.score)
+    }
+
+    updateStats(health, stamina, staminaRegen ,speed, selector){
+        if (selector === 0){
+            if (this.healthbar.currentHealth < 1){
+                this.healthbar.increaseHealth(health)
+                console.log('extra health')
+                console.log(this.healthbar.currentHealth)
+            } else{
+                this.updateStats(0,0.1, 0,0, 1)
+            }
+        } else if (selector === 1){
+            if (this.staminaSlowdownMultiplier > 0.3){
+                this.staminaSlowdownMultiplier -= stamina
+                console.log('extra stamina')
+                console.log(this.staminaSlowdownMultiplier)
+            } else{
+                this.updateStats(0,0, 0.5,0, 2)
+            }
+        } else if (selector === 2){
+            if (this.staminaRegenBonusMultiplier < 9){
+                this.staminaRegenBonusMultiplier += staminaRegen
+                console.log('extra stamina regen')
+                console.log(this.staminaRegenBonusMultiplier)
+            } else{
+                this.updateStats(0,0, 0,0.5, 3)
+            }
+
+        } else if (selector === 3){
+            if (this.speedMultiplier < 3){
+                this.speedMultiplier += speed
+                console.log('extra speed')
+                console.log(this.staminaRegenBonusMultiplier)
+            } else{
+                console.log('nothing else to upgrade!')
+            }
+        }
     }
 
     hitSomething(event, game) {
         if (event.other instanceof Fish && this.pos.y < 850) {
-            console.log(event.other.randomScale);
-            console.log(event.other.height);
-            console.log(this.yScale * 100);
-            if(event.other.randomScale * 48 < this.yScale * 100){
-                console.log('this fish is smaller!')
+            if(event.other.randomScale * 48 < this.yScale * 75){
+                //console.log('this fish is smaller!')
                 // kill fish
                 event.other.kill();
                 //increase shark size
-                this.xScale += 0.01
-                this.yScale += 0.01
+                this.xScale += 0.01 + (event.other.randomScale/100)
+                this.yScale += 0.01 + (event.other.randomScale/100)
                 //increase shark speed
+                /*
                 if (!this.ySpeed > 120) {
                     this.ySpeed += 0.5;
                 }
                 if (!this.xSpeed > 120) {
                     this.xSpeed += 0.5;
                 }
+                 */
                 // decrease the camera zoom
                 //this.scene.zoomUpdate();
+                if (this.healthbar.currentHealth < 0.8){
+                    this.healthbar.increaseHealth(0.1);
+                }
+
                 if (this.scene.camera.zoom > 1){
                     this.scene.camera.zoom -= 0.01;
                 }
 
                 // check if fish are allowed to spawn again
-                if (this.fishCollection.length < this.fishAmountLimit){
-                    this.fishSpawn = true;
-                }
+                this.fishCheck();
 
                 this.playerScale = new Vector(this.xScale, this.yScale)
-                this.scale = this.playerScale;
-                this.score++
-                console.log(this.children[0]);
+                this.updateScore(event.other.score)
                 //this.children[0].text = 'Score: ' + this.score.toString();
                 // this.game.scoreLabel.text =
                 //this.children[0].pos.y += 0.01;
                 this.spawnBlood(game, event.other.pos.x, event.other.pos.y);
             }else{
-                console.log('this fish is bigger')
+                // console.log('this fish is bigger')
                 this.playerHealth -= 0.01;
-                this.children[0].reduceHealth(0.01)
+                this.healthbar.reduceHealth(0.01)
                 this.vel.x *= -1
                 this.vel.y *= -1
                 this.scene.shakeCam();
@@ -156,11 +201,19 @@ export class Player extends Actor {
         }
     }
 
-    onPreUpdate(engine) {
-        if (this.pos.y > 850){
-            console.log('in the safe zone')
-        } else{
+    fishCheck(){
+        if (this.fishCollection.length < this.fishAmountLimit){
+            this.fishSpawn = true;
+        }
+    }
 
+    onPreUpdate(engine) {
+        //stupid fix for shark hiding
+        if (this.pos.y > 850){
+            //console.log('in the safe zone')
+            this.scaredRadius.body.collisionType = CollisionType.PreventCollision
+        } else{
+            this.scaredRadius.body.collisionType = CollisionType.Passive
         }
 
         if (!(
@@ -185,22 +238,23 @@ export class Player extends Actor {
         this.pos.y = clamp(this.pos.y, 0, 960)
 
         if (engine.input.keyboard.isHeld(Keys.ShiftLeft) && this.stamina === true && (this.vel.x !== 0 || this.vel.y !== 0)) {
-            this.running = 2;
-            //this.scene.staminabar.reduceStamina(0.005);
-            //console.log(this.children[1].currentStamina)
-            this.children[1].reduceStamina(0.005)
-            if(this.children[1].currentStamina <= 0){
+            if(this.staminabar.currentStamina <= 0){
                 this.stamina = false;
                 this.staminaRegenMultiplier = 8;
-                console.log('no stamina anymore')
-                console.log(this.stamina)
+                //console.log('no stamina anymore')
+                //console.log(this.stamina)
+            } else{
+                this.running = 2;
+                //this.scene.staminabar.reduceStamina(0.005);
+                //console.log(this.children[1].currentStamina)
+                this.staminabar.reduceStamina(0.005 * this.staminaSlowdownMultiplier)
             }
         } else{
             this.running = 1;
             //this.scene.staminabar.increaseStamina(0.0005);
-            this.children[1].increaseStamina(0.0008 * this.staminaRegenMultiplier)
+            this.staminabar.increaseStamina(0.0008 * this.staminaRegenMultiplier * this.staminaRegenBonusMultiplier)
 
-            if (this.children[1].currentStamina >= 0.5){
+            if (this.staminabar.currentStamina >= 0.5){
                 this.stamina = true;
                 this.staminaRegenMultiplier = 2;
             }
@@ -208,7 +262,7 @@ export class Player extends Actor {
         }
 
         if (engine.input.keyboard.isHeld(Keys.W) || engine.input.keyboard.isHeld(Keys.Up)) {
-            yspeed = -this.ySpeed * 0.8 * this.running;
+            yspeed = -this.ySpeed * 0.8 * this.running * this.speedMultiplier;
             if (this.running > 1){
                 //this.spawnSpeedBubbles(this.game, this.pos.x,this.pos.y, 0, -1000)
                 this.particleOn = true
@@ -218,7 +272,7 @@ export class Player extends Actor {
         }
 
         if (engine.input.keyboard.isHeld(Keys.S) || engine.input.keyboard.isHeld(Keys.Down)) {
-            yspeed = this.ySpeed * 1.3 * this.running;
+            yspeed = this.ySpeed * 1.3 * this.running * this.speedMultiplier;
             if (this.running > 1){
                 //this.spawnSpeedBubbles(this.game, this.pos.x,this.pos.y, 0, 1000)
                 this.particleOn = true
@@ -227,7 +281,7 @@ export class Player extends Actor {
         }
 
         if (engine.input.keyboard.isHeld(Keys.D) || engine.input.keyboard.isHeld(Keys.Right)) {
-            xspeed = this.xSpeed * this.running;
+            xspeed = this.xSpeed * this.running * this.speedMultiplier;
             this.graphics.flipHorizontal = true;
 
             this.collider.useBoxCollider(
@@ -246,7 +300,7 @@ export class Player extends Actor {
         }
 
         if (engine.input.keyboard.isHeld(Keys.A) || engine.input.keyboard.isHeld(Keys.Left)) {
-            xspeed = -this.xSpeed * this.running;
+            xspeed = -this.xSpeed * this.running * this.speedMultiplier;
             this.graphics.flipHorizontal = false;
 
             this.collider.useBoxCollider(
@@ -320,7 +374,7 @@ export class Player extends Actor {
         emitter.endColor = Color.Blue;
         game.add(emitter);
         setTimeout(() => {
-            console.log('clearing')
+            //console.log('clearing')
             emitter.clearParticles();
             emitter.kill();
         }, 1);
