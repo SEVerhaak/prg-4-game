@@ -21,7 +21,7 @@ const Resources = {
     JellyFish: new ImageSource('images/JellyFish.png'),
     SplashScreen: new ImageSource('images/splashscreenAlt.png'),
     GameOver: new ImageSource('images/gameover.png'),
-    Map: new TiledResource('src/assets/tileMap/map_good.tmx')
+    Map: new TiledResource('images/map_good.tmx')
 
 }
 const ResourceLoader = new Loader([
