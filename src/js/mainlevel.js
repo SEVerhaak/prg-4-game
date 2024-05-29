@@ -68,7 +68,7 @@ export class Mainlevel extends Scene {
         this.player = new Player(this.game, this)
         this.add(this.player);
 
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 32; i++) {
             if (i !== 15 || i !== 16){
                 const random1 = randomIntInRange(0, 50)
                 this.jellyfish = new JellyFish((100 * i) + random1, this.jellyHeightArray[i])
@@ -120,31 +120,12 @@ export class Mainlevel extends Scene {
     spawnFish() {
         console.log('spawned fish')
         if(this.fishSpawn){
-            this.fishArray = [];
-            /*
-            // add to fish array
-            const fish = new Tuna(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const sardine = new Sardine(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const oilSardine = new OilSardine(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const blackSnapper = new BlackSnapper(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const muttonSnapper = new MuttonSnapper(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const redSnapper = new RedSnapper(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const yellowTailSnapper = new YellowTailSnapper(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const mackeral = new SpanishMackeral(this.game, randomInRange(0,3000), randomInRange(0,900))
-            const yellowTang = new YellowTang(this.game, randomInRange(0,3000), randomInRange(0,900))
-            this.fishArray.push(fish, sardine, oilSardine, blackSnapper, muttonSnapper, redSnapper, yellowTailSnapper, mackeral, yellowTang)
-             */
-            const random = randomIntInRange(0,this.fishTypes.length - 1);
 
-            //const fishToSpawn = new this.fishTypes[random](this.game, randomInRange(0,3000), randomInRange(0,900))
+            const random = randomIntInRange(0,this.fishTypes.length - 1);
             const fishToSpawn = new this.fishTypes[random](this.game, this.player.pos.x , this.player.pos.y, this.windowWidth, this.windowHeight)
 
-            //console.log(random)
-            //this.add(sardine)
-            //this.add(this.fishArray[random]);
             this.add(fishToSpawn);
-            //console.log(this.fishArray[random])
-            this.fishCollection.push(this.fishArray[random]);
+            this.fishCollection.push(fishToSpawn);
             if (this.fishCollection.length > this.fishAmountLimit){
                 this.fishSpawn = false;
             }

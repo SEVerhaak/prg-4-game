@@ -162,17 +162,7 @@ export class Player extends Actor {
                 //increase shark size
                 this.xScale += 0.01 + (event.other.randomScale/100)
                 this.yScale += 0.01 + (event.other.randomScale/100)
-                //increase shark speed
-                /*
-                if (!this.ySpeed > 120) {
-                    this.ySpeed += 0.5;
-                }
-                if (!this.xSpeed > 120) {
-                    this.xSpeed += 0.5;
-                }
-                 */
-                // decrease the camera zoom
-                //this.scene.zoomUpdate();
+
                 if (this.healthbar.currentHealth < 0.8){
                     this.healthbar.increaseHealth(0.1);
                 }
